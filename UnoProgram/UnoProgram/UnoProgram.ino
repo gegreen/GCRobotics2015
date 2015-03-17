@@ -8,57 +8,65 @@
 #include "Stepper.h"
 
 
-#define In1        4//Pin#
-#define In2        5//Pin#
+#define In1        A5//Pin#
+#define In2        A4//Pin#
 #define ChannelA   2 //Pin#
 #define Interupt_num 0
 #define EN1        10 //Pin#
 #define MaxPWM 255 // Max PWM
 #define UP 1
 #define DOWN 0
-#define Encoder_counts 1000
-#define Percent_spin 50
-#define Powerpin A5
-#define Switch A4
+#define first_lift 5000//5000
+#define clearance 800
+#define PlateHeight 200
+#define Percent_spin 100
+//#define Powerpin 11
 
-#define inPin A0
-#define outPin A1
+#define Switch A3
+#define inPin 12
+#define outPin 13
 
+int height;
 int State;
-volatile int numEncoder;
-Stepper ArmMotor(150, 9); 
+int numEncoder;
+int hold;
+Stepper ArmMotor(255, 20); 
 
 void setup()
 {
+	height = 0;
+	//finish = first_lift + clearance;
 	numEncoder = 0;
 	State = 0;
+	hold = 0;
 	pinMode(outPin, OUTPUT);
 	pinMode(inPin, INPUT);
-
 	pinMode(Switch, INPUT);
+	
+	
 	pinMode(In1,OUTPUT);
 	pinMode(In2,OUTPUT);
 	pinMode(EN1,OUTPUT);
 	pinMode(ChannelA,INPUT);
-	pinMode(Powerpin, OUTPUT);
-	digitalWrite(Powerpin, HIGH);
+	//pinMode(Powerpin, OUTPUT);
+	//digitalWrite(Powerpin, HIGH);
 
 	attachInterrupt(Interupt_num, incEncoder, RISING);
 
 		// Prototypes
-	void MotorSpin(long,int,int);
+	void MotorSpin(int,int,int);
 	void IncEncoder();
 }
 
 void loop()
 {
 		__asm__("nop\n\t");
-	// Polls till an input is recieved from the Mega
+	
+	if (hold == 1)
+	ArmMotor.Hold();
 	
 	switch (State)
 	{
-		
-		//waiting for input to come high //This is the Refridgerator pickup case
 		case 0:
 			if (digitalRead(inPin) == HIGH)
 			{
@@ -67,7 +75,9 @@ void loop()
 			
 			break;
 		case 1:
-			MotorSpin(Encoder_counts,Percent_spin, UP);//lift plate above shelf height
+			MotorSpin(first_lift,Percent_spin, UP);//lift above shelf height
+			height = height + numEncoder;
+			numEncoder = 0;
 			digitalWrite(outPin,HIGH);
 			State++;
 			break;
@@ -79,7 +89,7 @@ void loop()
 			}
 			break;
 		case 3:
-		if (digitalRead(inPin) == HIGH)
+		if (digitalRead(inPin) == HIGH)// wait to move to shelf
 		{
 			State++;
 		}
@@ -87,7 +97,13 @@ void loop()
 		break;
 		case 4:
 		MotorSpin(0,Percent_spin, DOWN);//bring arms down to shelf 
-		ArmMotor.Close();//grab the plate
+		height = height - numEncoder;
+		numEncoder = 0;
+		MotorSpin(PlateHeight,Percent_spin, UP);
+		height = height + numEncoder;
+		//numEncoder = 0;
+		ArmMotor.Start();
+		hold = 1;
 		digitalWrite(outPin,HIGH);
 		State++;
 		break;
@@ -99,15 +115,15 @@ void loop()
 		}
 		break;
 		case 6:
-		if (digitalRead(inPin) == HIGH)
+		if (digitalRead(inPin) == HIGH)//wait to align with plate and grab it
 		{
 			State++;
 		}
-		
 		break;
 		case 7:
-		MotorSpin(0,Percent_spin, DOWN);//lower plate to table
-		ArmMotor.Open();//release plate
+		MotorSpin(clearance, Percent_spin, UP);//get clearance for table
+		height = height + numEncoder;
+		numEncoder = 0;
 		digitalWrite(outPin,HIGH);
 		State++;
 		break;
@@ -126,11 +142,45 @@ void loop()
 		
 		break;
 		case 10:
-		MotorSpin(Encoder_counts,Percent_spin, DOWN);//lower lift to start position
-		digitalWrite(outPin,HIGH);
+		MotorSpin(0,Percent_spin, DOWN);//lower plate to table
+		height = height - numEncoder;
+		numEncoder = 0;
+		hold = 0;
 		State++;
 		break;
 		case 11:
+		MotorSpin(PlateHeight,Percent_spin, UP);
+		height = height + numEncoder;
+		//numEncoder = 0;
+		ArmMotor.Open();//release plate
+		MotorSpin(clearance, Percent_spin, UP);//get clearance from table
+		height = height + numEncoder;
+		numEncoder = 0;
+		digitalWrite(outPin,HIGH);
+		State++;
+		break;
+		case 12:
+		if (digitalRead(inPin) == LOW)
+		{
+			digitalWrite(outPin,LOW);
+			State++;
+		}
+		break;
+		case 13:
+		if (digitalRead(inPin) == HIGH)
+		{
+			State++;
+		}
+		
+		break;
+		case 14:
+		MotorSpin(height,Percent_spin, DOWN);//lower lift to start position
+		digitalWrite(outPin,HIGH);
+		numEncoder = 0;
+		height = 0;
+		State++;
+		break;
+		case 15:
 		if (digitalRead(inPin) == LOW)
 		{
 			digitalWrite(outPin,LOW);
@@ -196,19 +246,23 @@ If you want to change the Frequency (It should be fine as is):
 // Interrupt
 void incEncoder()
 {
-  numEncoder++;
+	//if (digitalRead(In1))
+	numEncoder++;
+	//else if (digitalRead(In2))
+	//numEncoder--;
+	
 }
 
 
 
 
 // Function
-void MotorSpin(long spinTime, int percentSpin, int dirSpin)
+void MotorSpin(int spinTime, int percentSpin, int dirSpin)
 {
 	int pwmSet;
   
   // This chooses the direction the motor will spin based on the passed in variable
-   if (dirSpin == 1)
+   if (dirSpin == UP)
  {
    digitalWrite(In2,LOW);
    digitalWrite(In1,HIGH);
@@ -229,16 +283,25 @@ void MotorSpin(long spinTime, int percentSpin, int dirSpin)
   if (spinTime == 0)
   {
 	  while(!digitalRead(Switch))
-	  {}
+	  {
+		  spinTime = 0;//__asm__("nop\n\t");
+		  }
+		 
   }
   else 
   {
-	  while ( numEncoder < spinTime){}
+		  while ( numEncoder < spinTime)
+		{
+		    delay(1);// __asm__("nop\n\t");
+		}
+	  //numEncoder = 0;
   }
-  numEncoder = 0;
+  
   
   // Turn off motor
   analogWrite(EN1, 0);
-  delay(2000);
+  digitalWrite(In1,LOW);
+  digitalWrite(In2,LOW);
+  delay(500);
   return; 
 }

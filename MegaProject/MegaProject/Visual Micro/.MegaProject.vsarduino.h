@@ -24,5 +24,3 @@ void ultraInterrupt();
 #include <MegaProject.ino>
 #include <Motors.cpp>
 #include <Motors.h>
-#include <Ultrasonic.cpp>
-#include <Ultrasonic.h>

@@ -9,9 +9,13 @@
 #include <Wire.h>
 #include "Motors.h"
 #include "Lift.h"
-#define Button 52
+#define Button 49
 #define INpin 51
 #define OUTpin 53
+#define Xplate 61
+#define Closed 40
+//#define Serial_black 20
+//#define Serial_white 21
 	
 	
 /********************************************************
@@ -28,6 +32,8 @@ int XTarget = 0;
 int WTarget = 0;
 int TargetFlag = 0;
 int LiftAck = 0;
+int X, Y;
+int direction = 0;
 
 
 // Create instance of the class Ultrasonic
@@ -61,6 +67,7 @@ void setup()
 	pinMode(INpin, INPUT);
 	pinMode(OUTpin, OUTPUT);
 	digitalWrite(OUTpin, LOW);
+	pinMode(Closed, INPUT);
 	//ForwardTarget = 305;
 	//XTarget = 1124;
 	//YTarget = 1914;
@@ -131,25 +138,25 @@ void loop()
 	switch (StateMachine)
 	{
 		case 0:
-			
+			//wait for the button
 			if (!digitalRead(Button))
 			StateMachine++;
 			break;
 		//Start at [(52,65)]
 		case 1:
-
-			Ultra.checkPoint(BACK,52,65);
+			//get ready
+			Ultra.checkPoint(BACK,Xplate,65);
 
 			if (Ultra.CheckPointFlag == 1)
 			{
 				StateMachine++;
 				Ultra.StateMachine = 0;
-				YTarget = 2826;
+				YTarget = 2500;//YTarget = 2826;
 			}
 
 			break;
 		// Go to [52,180] by moving 90 cm forward
-		case 2:
+		case 2://cross the room
 			if (TargetFlag == 0){
 				TargetFlag = RobotMove.moveForward(&YTarget);
 			}
@@ -161,11 +168,11 @@ void loop()
 				digitalWrite(13, LOW);
 			}
 			break;
-		// Check point at [52,150] by (52,65)  //I changed this so you need to reevaluate the points from now on
+		
 		case 3:
-			//Ultra.checkPoint(FRONT, 52,65);
+			//line up
 			// Compensating for the irregular back of the fridge
-			Ultra.checkPoint(FRONT,52,80);
+			Ultra.checkPoint(FRONT,Xplate,72);
 			if (Ultra.CheckPointFlag == 1){
 				Ultra.StateMachine = 0;
 				StateMachine++;
@@ -173,7 +180,7 @@ void loop()
 				digitalWrite(OUTpin, HIGH);
 			}
 			break;
-		case 4:
+		case 4: //raise the lift
 			if (digitalRead(INpin) == HIGH)
 			{
 				digitalWrite(OUTpin, LOW);
@@ -181,39 +188,24 @@ void loop()
 				YTarget = 2512;
 			}
 			break;
-		// Move to [52,190] by moving forward by 10 cm 
-		/*case 4:
-			if (TargetFlag == 0){
-				TargetFlag = RobotMove.moveForward(&YTarget);
-			}
-			if (TargetFlag == 1){
-				TargetFlag = 0;
-				StateMachine++;
-				RobotMove.stop();
-				delay(200);
-				digitalWrite(13, LOW);
-				YTarget = 2512;
-				
-				Master.MasterRequestStateChange();
-			}
-			break;
-			*/
 		case 5:
 			if (digitalRead(INpin) == LOW)
 			StateMachine++;
 			break;
 		// this is to ensure that the robot waits till the lift is done
-		case 6:
+		case 6: //line up with plate
 			//Ultra.checkPoint(FRONT, 52,65);
 			// Compensating for the irregular back of the fridge
-			Ultra.checkPoint(FRONT,52,50);
+			Ultra.checkPoint(FRONT,Xplate,50);
 			if (Ultra.CheckPointFlag == 1){
 				Ultra.StateMachine = 0;
+				X = Xplate;
+				//Y = 180;
 				StateMachine++;
 				digitalWrite(OUTpin, HIGH);
 			}
 			break;
-		case 7:
+		case 7:// lower to shelf and grab plate
 			if (digitalRead(INpin) == HIGH)
 			{
 				digitalWrite(OUTpin, LOW);
@@ -224,8 +216,76 @@ void loop()
 			if (digitalRead(INpin) == LOW)
 			StateMachine++;
 			break;
-		// Move to [52,100] by moving backward 80 cm
 		case 9:
+			if (!digitalRead(Closed))
+			{
+				/*
+				if (TargetFlag == 0){
+					if (XPosition <= (Xplate + plateLimit))
+					TargetFlag = RobotMove.moveRight(&XTarget);
+					else if (XPosition >= (Xplate - plateLimit))
+					TargetFlag = RobotMove.moveRight(&XTarget);
+					
+				}
+				if (TargetFlag == 1){
+					XTarget = 1;
+					TargetFlag = 0;
+					RobotMove.stop();
+					delay(200);
+				}
+				*/
+				
+				Ultra.PlateFinder(BACK,X,51);
+				if (Ultra.CheckPointFlag == 1)
+				{
+					Ultra.StateMachine = 0;
+					if (!direction)
+					{
+						if (X <= (Xplate + plateLimit))
+						X++;
+						else 
+						direction = 1;
+					}
+					else if (direction)
+					{
+						if (X >= (Xplate - plateLimit))
+						X--;
+						else
+						direction = 0;
+					}
+					//X = (Ultra.PlateFinder(X, Y, Xplate));
+				}
+				
+			}
+			else if (digitalRead(Closed))
+			{
+				digitalWrite(OUTpin, HIGH);
+				StateMachine++;
+				
+			}
+			break;
+			case 10:
+			if (digitalRead(INpin) == HIGH)
+			{
+				digitalWrite(OUTpin, LOW);
+				StateMachine++;
+			}
+			break;
+			case 11:
+			if (digitalRead(INpin) == LOW)
+			StateMachine++;
+			break;
+		case 12:
+		Ultra.checkPoint(FRONT, Xplate, 51);
+		if (Ultra.CheckPointFlag == 1)
+		{
+			Ultra.StateMachine = 0;
+			StateMachine++;
+			
+		}
+		break;
+		// Move to [52,100] by moving backward 80 cm
+		case 13: // move to table
 			if (TargetFlag == 0){
 				TargetFlag = RobotMove.moveBackward(&YTarget);
 			}
@@ -235,12 +295,12 @@ void loop()
 				RobotMove.stop();
 				delay(200);
 				digitalWrite(13, LOW);
-				WTarget = 1181;
+				WTarget = 1100;//1181;
 			}
 			break;
 		
 		// Rotate 90* CCW
-		case 10:
+		case 14:
 			if (TargetFlag == 0){
 				TargetFlag = RobotMove.moveCCW(&WTarget);
 			}
@@ -250,11 +310,11 @@ void loop()
 				RobotMove.stop();
 				delay(200);
 				digitalWrite(13, LOW);
-				YTarget = 4019;
+				YTarget = 3500//4019;
 			}
 			break;
 		//Move to [180,100] by moving forward by 128 cm 
-		case 11:
+		case 15:
 			if (TargetFlag == 0){
 				TargetFlag = RobotMove.moveForward(&YTarget);
 			}
@@ -264,11 +324,11 @@ void loop()
 				RobotMove.stop();
 				delay(200);
 				digitalWrite(13, LOW);
-				WTarget = 1181;
+				WTarget = 1100;//1181;
 			}
 			break;
 		// Rotate 90* CCW
-		case 12:
+		case 16:
 			if (TargetFlag == 0){
 				TargetFlag = RobotMove.moveCCW(&WTarget);
 			}
@@ -283,7 +343,7 @@ void loop()
 			break;
 		
 		// Check point at [180,75] by (65,70)
-		case 13:
+		case 17://line up with table
 			Ultra.checkPoint(FRONT,65,65);
 			if (Ultra.CheckPointFlag == 1){
 				Ultra.StateMachine = 0;
@@ -292,23 +352,8 @@ void loop()
 				digitalWrite(OUTpin, HIGH);
 			}
 			break;
-		//Move to [180,65] by moving forward by 10 cm
-		case 14:/*
-			if (TargetFlag == 0){
-				TargetFlag = RobotMove.moveForward(&YTarget);
-			}
-			if (TargetFlag == 1){
-				TargetFlag = 0;
-				StateMachine++;
-				RobotMove.stop();
-				delay(200);
-				digitalWrite(13, LOW);
-				digitalWrite(OUTpin, HIGH);
-			}*/
-		StateMachine++;
-			break;
 			
-		case 15:
+		case 18:// drop the plate
 			if (digitalRead(INpin) == HIGH)
 			{
 				digitalWrite(OUTpin, LOW);
@@ -316,12 +361,12 @@ void loop()
 				YTarget = 314;
 			}
 			break;
-		case 16:
+		case 19:
 			if (digitalRead(INpin) == LOW)
 			StateMachine++;
 			break;
 			
-		case 17:
+		case 20://move to start position
 		
 		if (TargetFlag == 0){
 			TargetFlag = RobotMove.moveBackward(&YTarget);
@@ -333,11 +378,11 @@ void loop()
 			RobotMove.stop();
 			delay(200);
 			digitalWrite(13, LOW);
-			WTarget = 1181;
+			WTarget = 1100;//1181;
 		}
 		break;
 		
-		case 18:
+		case 21:
 		
 		if (TargetFlag == 0)
 		{
@@ -350,10 +395,10 @@ void loop()
 			RobotMove.stop();
 			delay(200);
 			digitalWrite(13, LOW);
-			YTarget = 2900;
+			YTarget = 2700;//2900;
 		}
 		break;
-		case 19:
+		case 22:
 		
 		if (TargetFlag == 0)
 		{
@@ -369,7 +414,7 @@ void loop()
 			WTarget = 1000;
 		}
 		break;
-		case 20:
+		case 23:
 		
 		if (TargetFlag == 0){
 			TargetFlag = RobotMove.moveCCW(&WTarget);
@@ -381,17 +426,43 @@ void loop()
 			RobotMove.stop();
 			delay(200);
 			digitalWrite(13, LOW);
+			YTarget = 314;
 		}
 		break;
-		case 21:
-		Ultra.checkPoint(BACK,52,65);
+		case 24:
+		
+		if (TargetFlag == 0){
+			TargetFlag = RobotMove.moveBackward(&YTarget);
+		}
+		if (TargetFlag == 1)
+		{
+			TargetFlag = 0;
+			StateMachine++;
+			RobotMove.stop();
+			delay(200);
+			digitalWrite(13, LOW);
+		}
+		break;
+		case 25: // lower lift to start position
+		Ultra.checkPoint(BACK,Xplate,65);
 
 		if (Ultra.CheckPointFlag == 1)
 		{
 			StateMachine++;
 			Ultra.StateMachine = 0;
-			StateMachine = 0;
+			digitalWrite(OUTpin, HIGH);
 		}
+		break;
+		case 26:
+		if (digitalRead(INpin) == HIGH)
+		{
+			digitalWrite(OUTpin, LOW);
+			StateMachine++;
+		}
+		break;
+		case 27:
+		if (digitalRead(INpin) == LOW)
+		StateMachine = 0;
 		break;
 		
 		default:

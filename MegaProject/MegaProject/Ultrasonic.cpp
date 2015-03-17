@@ -58,8 +58,6 @@ void Ultrasonic::initialize()
 	pinMode(22, OUTPUT);
 	pinMode(17, OUTPUT);
 	
-	
-	
 	// Set the address pins as output
 	pinMode(ADDR0_PIN, OUTPUT);
 	pinMode(ADDR1_PIN, OUTPUT);
@@ -93,8 +91,6 @@ void Ultrasonic::interrupt()
 		interrupt_flag = false;
 		//Select++;
 	}
-	
-	
 }
 
 void Ultrasonic::trigger()
@@ -182,10 +178,6 @@ void Ultrasonic::spinOnce(char Face)
 	// This allows for a little bit of a delay between triggers so that there's no interference 
 	if ((millis() - PreviousSpinTime) >= SPIN_PERIOD)
 	{
-
-
-
-
 		PreviousSpinTime = millis();
 		//if ((Select == 0) || (Select == 2) || (Select == 4) || (Select == 6) || (Select == 8))
 		if (interrupt_flag == false)
@@ -437,4 +429,131 @@ void Ultrasonic::encoderClear()
 	Robot.ReadOne(0x08,&Temp1,&Temp2);
 }
 
-
+int Ultrasonic::PlateFinder(char Face, int XTarget, int YTarget)
+{
+	static unsigned long PreviousCheckpointTime = 0;
+	static unsigned long PreviousMotorTime = 0;
+	static int XParallelFlag = 0;
+	static int XAtTargetFlag = 0;
+	static int YAtTargetFlag = 0;
+	// Acquire new data
+	spinOnce(Face);
+	
+	// This allows for a delay period before the telling the motor what to do again
+	// Sending motor commands at too fast of a speed can effect the function of the motor
+	if ((millis() - PreviousCheckpointTime) >= CHECKPOINT_PERIOD)
+	{
+		PreviousCheckpointTime = millis();
+		CheckPointFlag = 0;
+		// If we have finally collect the first set of the ultrasonic data
+		int XCurrent1 = EchoDistance[0] + X_OFFSET;
+		int XCurrent2 = EchoDistance[1] + X_OFFSET;
+		int YCurrent  = EchoDistance[Face ? 3:2] + Y_OFFSET;
+		//{XCurrent1},{XCurrent2},{YCurrent},{StateMachine},{XTarget}, {YTarget}
+		if ((XCurrent1 != X_OFFSET) && (XCurrent2 != X_OFFSET) && (YCurrent != Y_OFFSET))
+		{
+			XParallelFlag = ((XCurrent1 - XCurrent2) <= X_TOLERANCE) && ((XCurrent1 - XCurrent2) >= -X_TOLERANCE);
+			XAtTargetFlag = (XCurrent1 >= (XTarget - X_TOLERANCE)) && (XCurrent1 <= (XTarget + X_TOLERANCE));
+			YAtTargetFlag = (YCurrent >= (YTarget - Y_TOLERANCE)) && (YCurrent <= (YTarget + Y_TOLERANCE));
+			
+			// Making sure both sides are parallel
+			if (StateMachine == 0)
+			{
+				// If the difference of the 2 right sensors are greater than the tolerance
+				//if ( ((XCurrent1 - XCurrent2) > X_TOLERANCE) || ((XCurrent1 - XCurrent2) < -X_TOLERANCE) )
+				if (!XParallelFlag)
+				{
+					if ((millis() - PreviousMotorTime) >= MOTOR_PERIOD)
+					{
+						PreviousMotorTime = millis();
+						// Determining if robot needs to rotate CW or CCW
+						if (XCurrent1 > XCurrent2)
+						{
+							Robot.cw(SlowSpeed);
+						}
+						else
+						{
+							Robot.ccw(SlowSpeed);
+						}
+					}
+				}
+				// Stop the robot and move to the next state if the robot parallel
+				else {
+					if ((millis() - PreviousMotorTime) >= MOTOR_PERIOD)
+					{
+						PreviousMotorTime = millis();
+						//Robot.stop();
+						StateMachine++;
+					}
+				}
+			}
+			
+			// Making sure the robot reaches the x-axis target
+			else if (StateMachine == 1)
+			{
+				// If the Front right sensor is greater than the X-Target
+				// We are only using one of the sensor to check for distance
+				if ((XCurrent1 < (XTarget - X_TOLERANCE)) || (XCurrent1 > (XTarget + X_TOLERANCE)))
+				{
+					if ((millis() - PreviousMotorTime) >= MOTOR_PERIOD)
+					{
+						PreviousMotorTime = millis();
+						// Determining if the robot needs to strafe left or right
+						if (XCurrent1 < 10)
+						{
+							Robot.right(SlowSpeed);
+						}
+						else
+						{
+							if (XCurrent1 < (XTarget - X_TOLERANCE))
+							{
+								Robot.left(SlowSpeed);
+							}
+							else
+							{
+								Robot.right(SlowSpeed);
+							}
+						}
+					}
+				}
+				
+				// The robot is at the x-axis target
+				else
+				{
+					// Determine if the robot is at the x-axis target && is parallel to the wall
+					//if ((XCurrent1 >= (XTarget - X_TOLERANCE)) && (XCurrent1 <= (XTarget + X_TOLERANCE))
+					//&&
+					//(XCurrent2 >= (XTarget - X_TOLERANCE)) && (XCurrent2 <= (XTarget + X_TOLERANCE)))
+					if ( XParallelFlag && XAtTargetFlag)
+					{
+						if ((millis() - PreviousMotorTime) >= MOTOR_PERIOD)
+						{
+							PreviousMotorTime = millis();
+							StateMachine++;
+							Robot.stop();
+							digitalWrite(13,HIGH);
+							delay(200);
+							encoderClear();
+							XCurrent1 = 0;
+							XCurrent2 = 0;
+							YCurrent = 0;
+							StateMachine++;
+							CheckPointFlag = 1;
+						}
+					}
+					// else the robot needs to go back to state 0 and try to get it self parallel to the wall
+					else
+					{
+						if ((millis() - PreviousMotorTime) >= MOTOR_PERIOD)
+						{
+							PreviousMotorTime = millis();
+							StateMachine--;
+						}
+					}
+				}
+			}
+			
+		
+		}
+	}
+}

@@ -38,6 +38,8 @@
 #define CHECKPOINT_PERIOD 10
 #define MOTOR_PERIOD 30
 
+#define plateLimit 5
+
 
 /*******************************************************************
 *		Constant to tell the robot how many degrees to move by in order to make it self 
@@ -92,6 +94,7 @@ class Ultrasonic
 	void trigger();
 	void addressSelect(int Address);
 	void pinSelect (int TRIGGER_Address, int ECHO_Address);
+	int PlateFinder(char, int, int);
 	//void pinSelect (int Address);
 	void checkPoint(char Face, int XTartget, int YTarget);
 	void forward();
