@@ -17,8 +17,8 @@
 #define UP 1
 #define DOWN 0
 #define first_lift 5000//5000
-#define clearance 800
-#define PlateHeight 200
+#define clearance 900
+#define PlateHeight 250
 #define Percent_spin 100
 //#define Powerpin 11
 
@@ -101,7 +101,7 @@ void loop()
 		numEncoder = 0;
 		MotorSpin(PlateHeight,Percent_spin, UP);
 		height = height + numEncoder;
-		//numEncoder = 0;
+		numEncoder = 0;
 		ArmMotor.Start();
 		hold = 1;
 		digitalWrite(outPin,HIGH);
@@ -151,7 +151,7 @@ void loop()
 		case 11:
 		MotorSpin(PlateHeight,Percent_spin, UP);
 		height = height + numEncoder;
-		//numEncoder = 0;
+		numEncoder = 0;
 		ArmMotor.Open();//release plate
 		MotorSpin(clearance, Percent_spin, UP);//get clearance from table
 		height = height + numEncoder;
