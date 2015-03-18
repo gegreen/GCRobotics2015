@@ -14,8 +14,8 @@
 #define dir1 4
 #define brk2 5
 #define dir2 7
-#define CW 1
-#define CCW 0
+#define CW 0
+#define CCW 1
 #define Startspeed 100
 
 class Stepper
