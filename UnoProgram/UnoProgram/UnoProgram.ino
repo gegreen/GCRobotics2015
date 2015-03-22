@@ -7,20 +7,18 @@
 
 #include "Stepper.h"
 
-
 #define In1        A5//Pin#
 #define In2        A4//Pin#
 #define ChannelA   2 //Pin#
 #define Interupt_num 0
-#define EN1        10 //Pin#
-#define MaxPWM 255 // Max PWM
+#define EN1 10 //Pin#
+#define MaxPWM 255 //Max PWM
 #define UP 1
 #define DOWN 0
-#define first_lift 5000//5000
+#define first_lift 5000
 #define clearance 900
 #define PlateHeight 250
 #define Percent_spin 100
-//#define Powerpin 11
 
 #define Switch A3
 #define inPin 12
@@ -35,7 +33,6 @@ Stepper ArmMotor(255, 20);
 void setup()
 {
 	height = 0;
-	//finish = first_lift + clearance;
 	numEncoder = 0;
 	State = 0;
 	hold = 0;
@@ -48,8 +45,6 @@ void setup()
 	pinMode(In2,OUTPUT);
 	pinMode(EN1,OUTPUT);
 	pinMode(ChannelA,INPUT);
-	//pinMode(Powerpin, OUTPUT);
-	//digitalWrite(Powerpin, HIGH);
 
 	attachInterrupt(Interupt_num, incEncoder, RISING);
 
@@ -239,22 +234,11 @@ If you want to change the Frequency (It should be fine as is):
 
 */
 
-
-
-
-
 // Interrupt
 void incEncoder()
 {
-	//if (digitalRead(In1))
 	numEncoder++;
-	//else if (digitalRead(In2))
-	//numEncoder--;
-	
 }
-
-
-
 
 // Function
 void MotorSpin(int spinTime, int percentSpin, int dirSpin)
@@ -266,25 +250,25 @@ void MotorSpin(int spinTime, int percentSpin, int dirSpin)
  {
    digitalWrite(In2,LOW);
    digitalWrite(In1,HIGH);
- }
+}
    else
  {
    digitalWrite(In1,LOW);
    digitalWrite(In2,HIGH);   
  }
  
- // Calculates the percent of the time to spin the motor
+// Calculates the percent of the time to spin the motor
   pwmSet = MaxPWM * percentSpin;
   pwmSet = pwmSet/100;
  
- // Activates the PWM on the EN1
+// Activates the PWM on the EN1
   analogWrite(EN1,pwmSet);
-  // Keeps motor spinning for a set amount of time
+// Keeps motor spinning for a set amount of time
   if (spinTime == 0)
   {
 	  while(!digitalRead(Switch))
 	  {
-		  spinTime = 0;//__asm__("nop\n\t");
+		  spinTime = 0;
 		  }
 		 
   }
@@ -292,13 +276,11 @@ void MotorSpin(int spinTime, int percentSpin, int dirSpin)
   {
 		  while ( numEncoder < spinTime)
 		{
-		    delay(1);// __asm__("nop\n\t");
+		    delay(1);
 		}
-	  //numEncoder = 0;
+	  
   }
-  
-  
-  // Turn off motor
+   // Turn off motor
   analogWrite(EN1, 0);
   digitalWrite(In1,LOW);
   digitalWrite(In2,LOW);

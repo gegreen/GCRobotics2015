@@ -45,7 +45,6 @@ void setup() {
 	Decrement = (Startspeed - Delay)/startsteps;
 	secDelay = Startspeed;
 	direction = CCW;
-	
 }
 
 // the loop routine runs over and over again forever:
@@ -60,7 +59,6 @@ void loop() {
 		Count = i%4;
 		switch (Count)
 		{
-			
 			case 0:
 			digitalWrite(dir1, HIGH);
 			digitalWrite(dir2, HIGH);
@@ -93,19 +91,11 @@ void loop() {
 		secDelay = secDelay - Decrement;
 		else
 		secDelay = Delay;*/
-		
-		
-		
 	}
-	
 	
 	/*delay(2000);
 	if (direction == CW)
 	direction = CCW;
 	else 
 	direction = CW;*/
-	
-
-	
-
 }
