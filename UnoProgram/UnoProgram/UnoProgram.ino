@@ -169,14 +169,80 @@ void loop()
 		}
 		
 		break;
+		
 		case 14:
+		MotorSpin(0,Percent_spin, DOWN);//bring arms down to table
+		height = height - numEncoder;
+		numEncoder = 0;
+		MotorSpin(PlateHeight,Percent_spin, UP);
+		height = height + numEncoder;
+		numEncoder = 0;
+		ArmMotor.Start();
+		hold = 1;
+		digitalWrite(outPin,HIGH);
+		State++;
+		break;
+		
+		case 15:
+		if (digitalRead(inPin) == LOW)
+		{
+			digitalWrite(outPin,LOW);
+			State++;
+		}
+		break;
+		
+		case 16:
+		if (digitalRead(inPin) == HIGH)//wait to align with plate and grab it
+		{
+			State++;
+		}
+		break;
+		
+		case 17:
+		MotorSpin(1500, Percent_spin, UP);//get clearance for table
+		height = height + numEncoder;
+		numEncoder = 0;
+		digitalWrite(outPin,HIGH);
+		State++;
+		
+		break;
+		case 18:
+		if (digitalRead(inPin) == LOW)
+		{
+			digitalWrite(outPin,LOW);
+			State++;
+		}
+		break;
+		
+		case 19:
+		MotorSpin(0,Percent_spin, DOWN);//lower plate to table
+		height = height - numEncoder;
+		numEncoder = 0;
+		hold = 0;
+		State++;
+		break;
+		
+		case 20:
+		MotorSpin(PlateHeight,Percent_spin, UP);
+		height = height + numEncoder;
+		numEncoder = 0;
+		ArmMotor.Open();//release plate
+		MotorSpin(clearance, Percent_spin, UP);//get clearance from table
+		height = height + numEncoder;
+		numEncoder = 0;
+		digitalWrite(outPin,HIGH);
+		State++;
+		break;
+		
+		case 21:
 		MotorSpin(height,Percent_spin, DOWN);//lower lift to start position
 		digitalWrite(outPin,HIGH);
 		numEncoder = 0;
 		height = 0;
 		State++;
 		break;
-		case 15:
+		
+		case 22:
 		if (digitalRead(inPin) == LOW)
 		{
 			digitalWrite(outPin,LOW);
