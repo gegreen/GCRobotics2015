@@ -17,6 +17,9 @@
 #define CW 0
 #define CCW 1
 #define Startspeed 100
+#define wide 10
+#define open 30
+
 
 class Stepper
 {
@@ -32,6 +35,7 @@ class Stepper
 	void Close();
 	void Hold();
 	void Start();
+	void Wider();
 	private:
 	void StepCycle(int steps, int direction, int percent, int startsteps);
 };

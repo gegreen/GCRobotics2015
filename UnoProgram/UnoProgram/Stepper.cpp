@@ -31,17 +31,20 @@ Stepper::Stepper(int pwm_percent, int D)
 	
 }
 
+void Stepper::Wider()
+{
+	StepCycle(wide, CW, pduty, 8);
+}
 
 void Stepper::Open()
 {
-	StepCycle(30, CW, pduty, 8);
+	StepCycle(open, CW, pduty, 8);
 	delay(500);
 }
 
 void Stepper::Close()
 {
-	StepCycle(30, CCW, pduty, 8);
-	delay(500);
+	StepCycle(open+wide, CCW, pduty, 8);
 }
 
 void Stepper::Hold()

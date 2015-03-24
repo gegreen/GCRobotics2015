@@ -73,6 +73,7 @@ void loop()
 			MotorSpin(first_lift,Percent_spin, UP);//lift above shelf height
 			height = height + numEncoder;
 			numEncoder = 0;
+			ArmMotor.Wider();
 			digitalWrite(outPin,HIGH);
 			State++;
 			break;
