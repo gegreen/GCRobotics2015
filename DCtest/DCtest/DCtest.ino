@@ -7,7 +7,7 @@
 
 
 #include "Stepper.h"
-
+/*
 #define In1        A5//Pin#
 #define In2        A4//Pin#
 #define ChannelA   2 //Pin#
@@ -23,6 +23,23 @@
 
 #define inPin 12
 #define outPin 13
+*/
+
+#define In1        A0//Pin#
+#define In2        A1//Pin#
+#define ChannelA   3 //Pin#
+#define Interupt_num 1
+#define EN1        2 //Pin#
+#define MaxPWM 255 // Max PWM
+#define UP 1
+#define DOWN 0
+#define Encoder_counts 1000
+#define Percent_spin 100
+//#define Powerpin 11
+#define Switch A2
+
+#define inPin A5
+#define outPin A4
 
 int State;
 int numEncoder;
@@ -39,6 +56,7 @@ void setup()
 	pinMode(In1,OUTPUT);
 	pinMode(In2,OUTPUT);
 	pinMode(EN1,OUTPUT);
+	digitalWrite(EN1, LOW);
 	pinMode(ChannelA,INPUT);
 	//pinMode(Powerpin, OUTPUT);
 	//digitalWrite(Powerpin, HIGH);
@@ -52,7 +70,7 @@ void setup()
 
 void loop()
 {
-		MotorSpin(Encoder_counts,Percent_spin, DOWN);//lift plate
+		MotorSpin(0,Percent_spin, DOWN);//lift plate
 }
 			
 
@@ -139,12 +157,13 @@ void MotorSpin(long spinTime, int percentSpin, int dirSpin)
   pwmSet = pwmSet/100;
  
  // Activates the PWM on the EN1
-  analogWrite(EN1,pwmSet);
+  //analogWrite(EN1,pwmSet);
+  digitalWrite(EN1, HIGH);
   // Keeps motor spinning for a set amount of time
   if (spinTime == 0)
   {
 	  while(!digitalRead(Switch))
-	  {}
+	  {__asm__("nop\n\t");}
   }
   else 
   {
@@ -155,7 +174,8 @@ void MotorSpin(long spinTime, int percentSpin, int dirSpin)
   numEncoder = 0;
   
   // Turn off motor
-  analogWrite(EN1, 0);
+  //analogWrite(EN1, 0);
+    digitalWrite(EN1, LOW);
   delay(2000);
   return; 
 }

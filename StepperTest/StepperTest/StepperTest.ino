@@ -7,11 +7,11 @@
 
 #include <avr/wdt.h>
 
-#define pwm 9
+#define pwm 10
 #define brk1 6
-#define dir1 4
-#define brk2 5
-#define dir2 7
+#define dir1 12
+#define brk2 7
+#define dir2 13
 #define CW 1
 #define CCW 0
 #define startsteps 4

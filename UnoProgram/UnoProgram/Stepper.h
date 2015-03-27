@@ -9,11 +9,24 @@
 #ifndef STEPPER_H_
 #define STEPPER_H_
 
+/*
 #define pwm 9
 #define brk1 6
 #define dir1 4
 #define brk2 5
 #define dir2 7
+#define CW 0
+#define CCW 1
+#define Startspeed 100
+#define wide 10
+#define open 30
+*/
+
+#define pwm 10
+#define brk1 6
+#define dir1 12
+#define brk2 7
+#define dir2 13
 #define CW 0
 #define CCW 1
 #define Startspeed 100

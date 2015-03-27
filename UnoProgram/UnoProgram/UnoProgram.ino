@@ -6,7 +6,7 @@
  */ 
 
 #include "Stepper.h"
-
+/*
 #define In1        A5//Pin#
 #define In2        A4//Pin#
 #define ChannelA   2 //Pin#
@@ -23,6 +23,24 @@
 #define Switch A3
 #define inPin 12
 #define outPin 13
+*/
+
+#define In1        A0//Pin#
+#define In2        A1//Pin#
+#define ChannelA   3 //Pin#
+#define Interupt_num 1
+#define EN1 2 //Pin#
+#define MaxPWM 255 //Max PWM
+#define UP 1
+#define DOWN 0
+#define first_lift 5000
+#define clearance 900
+#define PlateHeight 250
+#define Percent_spin 100
+
+#define Switch A2
+#define inPin A5
+#define outPin A4
 
 int height;
 int State;
@@ -171,7 +189,7 @@ void loop()
 		break;
 		
 		case 14:
-		MotorSpin(0,Percent_spin, DOWN);//bring arms down to table
+		MotorSpin(0,Percent_spin, DOWN);//bring arms down to table and grab plate
 		height = height - numEncoder;
 		numEncoder = 0;
 		MotorSpin(PlateHeight,Percent_spin, UP);
@@ -199,7 +217,7 @@ void loop()
 		break;
 		
 		case 17:
-		MotorSpin(1500, Percent_spin, UP);//get clearance for table
+		MotorSpin(1500, Percent_spin, UP);//get clearance for sink
 		height = height + numEncoder;
 		numEncoder = 0;
 		digitalWrite(outPin,HIGH);
@@ -215,26 +233,34 @@ void loop()
 		break;
 		
 		case 19:
-		MotorSpin(0,Percent_spin, DOWN);//lower plate to table
-		height = height - numEncoder;
-		numEncoder = 0;
-		hold = 0;
-		State++;
+		if (digitalRead(inPin) == HIGH)
+		{
+			State++;
+		}
 		break;
 		
 		case 20:
-		MotorSpin(PlateHeight,Percent_spin, UP);
-		height = height + numEncoder;
-		numEncoder = 0;
 		ArmMotor.Open();//release plate
-		MotorSpin(clearance, Percent_spin, UP);//get clearance from table
-		height = height + numEncoder;
-		numEncoder = 0;
 		digitalWrite(outPin,HIGH);
 		State++;
 		break;
 		
 		case 21:
+		if (digitalRead(inPin) == LOW)
+		{
+			digitalWrite(outPin,LOW);
+			State++;
+		}
+		break;
+		
+		case 22:
+		if (digitalRead(inPin) == HIGH)
+		{
+			State++;
+		}
+		break;
+		
+		case 23:
 		MotorSpin(height,Percent_spin, DOWN);//lower lift to start position
 		digitalWrite(outPin,HIGH);
 		numEncoder = 0;
@@ -242,13 +268,14 @@ void loop()
 		State++;
 		break;
 		
-		case 22:
+		case 24:
 		if (digitalRead(inPin) == LOW)
 		{
 			digitalWrite(outPin,LOW);
 			State=0;
 		}
 		break;
+		
 	}
 }
 			
@@ -329,7 +356,8 @@ void MotorSpin(int spinTime, int percentSpin, int dirSpin)
   pwmSet = pwmSet/100;
  
 // Activates the PWM on the EN1
-  analogWrite(EN1,pwmSet);
+  //analogWrite(EN1,pwmSet);
+  digitalWrite(EN1, HIGH);
 // Keeps motor spinning for a set amount of time
   if (spinTime == 0)
   {
@@ -348,7 +376,8 @@ void MotorSpin(int spinTime, int percentSpin, int dirSpin)
 	  
   }
    // Turn off motor
-  analogWrite(EN1, 0);
+  //analogWrite(EN1, 0);
+  digitalWrite(EN1, LOW);
   digitalWrite(In1,LOW);
   digitalWrite(In2,LOW);
   delay(500);
