@@ -35,7 +35,7 @@
 #define DOWN 0
 #define first_lift 5000
 #define clearance 900
-#define PlateHeight 250
+#define PlateHeight 50
 #define Percent_spin 100
 
 #define Switch A2
